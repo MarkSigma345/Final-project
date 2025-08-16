@@ -1,8 +1,11 @@
 import telebot
-
+import sqlite3 
 # Замена на токен вашего бота
 token = "7359372349:AAEu0RonTrohsViIE-sN6EszaSSMhRuA-u0"
 bot = telebot.TeleBot(token)
+
+documentation = "Это бот технической поддержки. Он обрабатывает все входящие сообщения и в зависимости от их контекста отправляет их в разные отделы(программисты или отдел продаж), т.е если в вопросе есть слово товар, то вопрос будет отправляться в отдел продаж, также бот автоматически дает ответы на частозадаваемые вопросы."
+
 
 # Словарь вопросов и ответов
 faq = {
@@ -17,7 +20,11 @@ faq = {
 # Команда start
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, "Привет! Я бот для управления чатом.")
+    bot.reply_to(message, "Привет! Я бот для технической поддержки.Введите команду /admin чтобы получить документацию")
+
+@bot.message_handler(commands=['admin'])
+def handle_admin(message):
+    bot.reply_to(message, documentation)
 
 @bot.message_handler(func=lambda message: True)
 def answer_question(message):
@@ -25,6 +32,21 @@ def answer_question(message):
     question = message.text.lower()
     if question in faq:
         bot.reply_to(message, faq[question])
-   
+    if any(x in question for x in ['сломался', 'оплата','ошибка','баг']):
+        con = sqlite3.connect("Server.db")
+        cur = con.cursor()
+        cur.execute(''' INSERT INTO questions (programmers) VALUES (?) ''', (question,))
+        con.commit()
+        con.close()
+    if any(x in question for x in ['товар','заказ','платеж','цена','скидка','оформить']):
+        con = sqlite3.connect("Server.db")
+        cur = con.cursor()
+        cur.execute(''' INSERT INTO questions (salesdepartment) VALUES (?) ''', (question,))
+        con.commit()
+        con.close()
+
+
+
 
 bot.infinity_polling(none_stop=True)
+
